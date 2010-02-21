@@ -1,4 +1,5 @@
 import wx
+import os
 
 id_CONNECT = wx.NewId()
 id_DISCONNECT = wx.NewId()
@@ -9,7 +10,11 @@ class MainWindow(wx.Frame):
 
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title)
-
+        
+        # get list of openvpn connectons
+        
+        self.getConnList()
+        
         # init toolbar
         self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.NO_BORDER | wx.TB_FLAT)
 
@@ -36,12 +41,16 @@ class MainWindow(wx.Frame):
         self.list.InsertStringItem(1, 'Item 2')
         self.list.InsertStringItem(2, 'Item 3')
         
-        self.list.SetStringItem(0, 1, 'Connection 1')
-        self.list.SetStringItem(0, 2, 'Disconnected')
-        self.list.SetStringItem(1, 1, 'Connection 2')
-        self.list.SetStringItem(1, 2, 'Disconnected')
-        self.list.SetStringItem(2, 1, 'Connection 3')
-        self.list.SetStringItem(2, 2, 'Connected')
+        for i in range(len(self.ovpnnames)):
+            self.list.SetStringItem(i, 1, self.ovpnnames[i])
+            self.list.SetStringItem(i, 2, 'Disconnected')
+        
+    def getConnList(self):
+        files = os.listdir('C:\\Program Files\\OpenVPN\\config')
+        ovpnfiles = filter(lambda s: s.endswith('.ovpn'), files)
+        self.ovpnnames = map(lambda s: s[:-5], ovpnfiles)
+        
+        print self.ovpnnames
                 
 
 class App(wx.App):
