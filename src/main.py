@@ -25,6 +25,7 @@ class MainWindow(wx.Frame):
         #self.connlist = []
         self.ovpnpath = 'C:\\Program Files\\OpenVPN'
         self.ovpnconfigpath = self.ovpnpath + '\\config'
+        self.ovpnexe = self.ovpnpath + '\\openvpn.exe'
         self.connstatus = {}
         self.connnames = {}
         
@@ -72,7 +73,8 @@ class MainWindow(wx.Frame):
         self.list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.list)
         self.list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected, self.list)
         
-        self.list.Select(0) # select first item
+        self.list.Focus(0)
+        self.list.Select(0)
         
     def getConnList(self, path):
         files = os.listdir(path)
@@ -141,7 +143,7 @@ class MainWindow(wx.Frame):
 
 
     def OnEditCfg(self, event):
-        index = self.list.GetFocusedItem()
+        index = self.list.GetFocusedItem();
         if index != -1:
             subprocess.Popen(['notepad.exe',
                                self.ovpnconfigpath + '\\' + self.connnames[index] + '.ovpn'])
