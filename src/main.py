@@ -25,7 +25,7 @@ class MainWindow(wx.Frame):
         #self.connlist = []
         self.ovpnpath = 'C:\\Program Files\\OpenVPN'
         self.ovpnconfigpath = self.ovpnpath + '\\config'
-        self.ovpnexe = self.ovpnpath + '\\openvpn.exe'
+        self.ovpnexe = self.ovpnpath + '\\bin\\openvpn.exe'
         self.connstatus = {}
         self.connnames = {}
         
@@ -96,7 +96,7 @@ class MainWindow(wx.Frame):
             if s in oldstats: # check if this connection has saved status
                 self.connstatus[i] = oldstats[s]
             else:
-                self.connstatus[i] = r
+                self.connstatus[i] = 0#r
             self.connnames[i] = s
             self.list.InsertStringItem(i, '', imageIndex=self.connstatus[i])
             self.list.SetStringItem(i, col=1, label=s)
@@ -108,7 +108,7 @@ class MainWindow(wx.Frame):
             self.toolbar.EnableTool(id_DISCONNECT, False)
             self.toolbar.EnableTool(id_EDITCFG, False)
             self.toolbar.EnableTool(id_VIEWLOG, False)
-        else: # has selected item
+        else: # have selected item
             if self.connstatus[index] == 0: # disconnected
                 self.toolbar.EnableTool(id_CONNECT, True)
                 self.toolbar.EnableTool(id_DISCONNECT, False)
@@ -128,19 +128,26 @@ class MainWindow(wx.Frame):
     def OnConnect(self, event):
         print 'connect'
         index = self.list.GetFocusedItem()
-        if index != -1:
-            self.connstatus[index] = 1
-            self.updateConnection(index)
-            self.updateToolbar(index)
+        if index == -1:
+            return
+        port = 10598 + index
+        subprocess.Popen([self.ovpnexe,
+                          '--config', self.ovpnconfigpath + '\\' + self.connnames[index] + '.ovpn',
+                          '--management', '127.0.0.1', '{0}'.format(port),
+                          '--management-query-passwords',
+                          '--management-log-cache', '200'])
+        self.connstatus[index] = 1
+        self.updateConnection(index)
+        self.updateToolbar(index)
         
     def OnDisconnect(self, event):
         print 'disconnect'
         index = self.list.GetFocusedItem()
-        if index != -1:
-            self.connstatus[index] = 0
-            self.updateConnection(index)
-            self.updateToolbar(index)
-
+        if index == -1:
+            return
+        self.connstatus[index] = 0
+        self.updateConnection(index)
+        self.updateToolbar(index)
 
     def OnEditCfg(self, event):
         index = self.list.GetFocusedItem();
