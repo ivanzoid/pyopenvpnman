@@ -16,16 +16,12 @@ class MainWindow(wx.Frame):
         self.getConnList()
         
         # init toolbar
-        self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.NO_BORDER | wx.TB_FLAT)
+        self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT | wx.TB_NO_TOOLTIPS )
 
-        self.toolbar.AddSimpleTool(
-            id_CONNECT, wx.Bitmap('images/connect.png', wx.BITMAP_TYPE_PNG), 'Connect')
-        self.toolbar.AddSimpleTool(
-            id_DISCONNECT, wx.Bitmap('images/disconnect.png', wx.BITMAP_TYPE_PNG), 'Disconnect')
-        self.toolbar.AddSimpleTool(
-            id_EDITCFG, wx.Bitmap('images/editcfg.png', wx.BITMAP_TYPE_PNG), 'Edit config')
-        self.toolbar.AddSimpleTool(
-            id_VIEWLOG, wx.Bitmap('images/viewlog.png', wx.BITMAP_TYPE_PNG), 'View log')
+        self.toolbar.AddLabelTool(id_CONNECT, 'Connect', wx.Bitmap('images/connect.png', wx.BITMAP_TYPE_PNG))
+        self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', wx.Bitmap('images/disconnect.png', wx.BITMAP_TYPE_PNG))
+        self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/editcfg.png', wx.BITMAP_TYPE_PNG))
+        self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', wx.Bitmap('images/viewlog.png', wx.BITMAP_TYPE_PNG))
         
         self.toolbar.Realize()
         
