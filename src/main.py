@@ -5,6 +5,7 @@ id_CONNECT = wx.NewId()
 id_DISCONNECT = wx.NewId()
 id_EDITCFG = wx.NewId()
 id_VIEWLOG = wx.NewId()
+id_REFRESH = wx.NewId()
 
 class MainWindow(wx.Frame):
 
@@ -13,15 +14,20 @@ class MainWindow(wx.Frame):
         
         # get list of openvpn connectons
         
-        self.getConnList()
+        self.connlist = []
+        self.ovpnpath = 'C:\\Program Files\\OpenVPN\\config'
         
         # init toolbar
+        
         self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT | wx.TB_NO_TOOLTIPS )
 
         self.toolbar.AddLabelTool(id_CONNECT, 'Connect', wx.Bitmap('images/connect.png', wx.BITMAP_TYPE_PNG))
         self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', wx.Bitmap('images/disconnect.png', wx.BITMAP_TYPE_PNG))
         self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/editcfg.png', wx.BITMAP_TYPE_PNG))
         self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', wx.Bitmap('images/viewlog.png', wx.BITMAP_TYPE_PNG))
+        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/viewlog.png', wx.BITMAP_TYPE_PNG))
+        
+        self.Bind(wx.EVT_TOOL, self.OnRefresh, refresh, id_REFRESH)
         
         self.toolbar.Realize()
         
@@ -38,36 +44,31 @@ class MainWindow(wx.Frame):
         self.list.InsertColumn(1, 'Name')
         self.list.InsertColumn(2, 'Status')
         
-#        self.list.InsertImageItem(index=0, imageIndex=0)
-#        self.list.InsertImageItem(index=1, imageIndex=1)
-#        self.list.InsertImageItem(index=2, imageIndex=0)
-        
-#        self.list.InsertImageStringItem(index=0, label='', imageIndex=0)
-#        self.list.InsertImageStringItem(index=0, label='', imageIndex=0)
-#        self.list.InsertImageStringItem(index=0, label='', imageIndex=0)
-        
-        self.list.InsertStringItem(0, '')
-        self.list.InsertStringItem(1, '')
-        #self.list.InsertStringItem(2, '')
-        
-        for i in range(len(self.ovpnnames)):
-            #self.list.SetStringItem(index=i, col=0, label='', imageId=1)
-            #self.list.SetItemImage(i, 0)
-            self.list.SetStringItem(index=i, col=0, imageId=1, label='')
-            self.list.SetStringItem(index=i, col=1, label=self.ovpnnames[i])
-            self.list.SetStringItem(index=i, col=2, label='Disconnected')            
-            #self.list.SetStringItem(index=i, col=2, label='Disconnected')
+        self.updateList()            
             
         self.list.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         self.list.SetColumnWidth(1, wx.LIST_AUTOSIZE)
         
-    def getConnList(self):
-        files = os.listdir('C:\\Program Files\\OpenVPN\\config')
+    def getConnList(self, path):
+        files = os.listdir(path)
         ovpnfiles = filter(lambda s: s.endswith('.ovpn'), files)
-        self.ovpnnames = map(lambda s: s[:-5], ovpnfiles)
+        ovpnnames = map(lambda s: s[:-5], ovpnfiles)
+        return ovpnnames
         
-        print self.ovpnnames
-                
+    def updateList(self):
+        newlist = self.getConnList(self.ovpnpath)
+        self.list.DeleteAllItems()
+        for c in newlist:
+            item = wx.ListItem()
+            item.SetImage(1)
+            i = self.list.InsertItem(item)
+            self.list.SetStringItem(i, col=1, label=c)
+            self.list.SetStringItem(i, col=2, label='Disconnected')
+        self.connlist = newlist
+        
+    def OnRefresh(self, event):
+        self.updateList()            
+
 
 class App(wx.App):
     def OnInit(self):
