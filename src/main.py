@@ -99,12 +99,46 @@ class MainWindow(wx.Frame):
             self.list.InsertStringItem(i, '', imageIndex=self.connstatus[i])
             self.list.SetStringItem(i, col=1, label=s)
             self.list.SetStringItem(i, col=2, label=connStatusString(self.connstatus[i]))
+            
+    def updateToolbar(self, index):
+        if index == -1:
+            self.toolbar.EnableTool(id_CONNECT, False)
+            self.toolbar.EnableTool(id_DISCONNECT, False)
+            self.toolbar.EnableTool(id_EDITCFG, False)
+            self.toolbar.EnableTool(id_VIEWLOG, False)
+        else: # has selected item
+            if self.connstatus[index] == 0: # disconnected
+                self.toolbar.EnableTool(id_CONNECT, True)
+                self.toolbar.EnableTool(id_DISCONNECT, False)
+                self.toolbar.EnableTool(id_EDITCFG, True)
+                self.toolbar.EnableTool(id_VIEWLOG, False)
+            else:
+                self.toolbar.EnableTool(id_CONNECT, False)
+                self.toolbar.EnableTool(id_DISCONNECT, True)
+                self.toolbar.EnableTool(id_EDITCFG, True)
+                self.toolbar.EnableTool(id_VIEWLOG, True)
+                
+    def updateConnection(self, index):
+        if index != -1:
+            self.list.SetItemImage(index, self.connstatus[index])
+            self.list.SetStringItem(index, col=2, label=connStatusString(self.connstatus[index]))
         
     def OnConnect(self, event):
         print 'connect'
+        index = self.list.GetFocusedItem()
+        if index != -1:
+            self.connstatus[index] = 1
+            self.updateConnection(index)
+            self.updateToolbar(index)
         
     def OnDisconnect(self, event):
-        print 'disconnect'        
+        print 'disconnect'
+        index = self.list.GetFocusedItem()
+        if index != -1:
+            self.connstatus[index] = 0
+            self.updateConnection(index)
+            self.updateToolbar(index)
+
 
     def OnEditCfg(self, event):
         index = self.list.GetFocusedItem()
@@ -120,24 +154,11 @@ class MainWindow(wx.Frame):
         print 'refresh'
         
     def OnItemSelected(self, event):
-        index = event.m_itemIndex
-        if self.connstatus[index] == 0: # disconnected
-            self.toolbar.EnableTool(id_CONNECT, True)
-            self.toolbar.EnableTool(id_DISCONNECT, False)
-            self.toolbar.EnableTool(id_EDITCFG, True)
-            self.toolbar.EnableTool(id_VIEWLOG, False)
-        else:
-            self.toolbar.EnableTool(id_CONNECT, False)
-            self.toolbar.EnableTool(id_DISCONNECT, True)
-            self.toolbar.EnableTool(id_EDITCFG, True)
-            self.toolbar.EnableTool(id_VIEWLOG, True)
+        self.updateToolbar(event.m_itemIndex)
     
     def OnItemDeselected(self, event):
         if self.list.GetSelectedItemCount() == 0:
-            self.toolbar.EnableTool(id_CONNECT, False)
-            self.toolbar.EnableTool(id_DISCONNECT, False)
-            self.toolbar.EnableTool(id_EDITCFG, False)
-            self.toolbar.EnableTool(id_VIEWLOG, False)
+            self.updateToolbar(-1)
 
 class App(wx.App):
     def OnInit(self):
