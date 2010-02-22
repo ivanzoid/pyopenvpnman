@@ -8,6 +8,12 @@ id_EDITCFG = wx.NewId()
 id_VIEWLOG = wx.NewId()
 id_REFRESH = wx.NewId()
 
+def connStatusString(status):
+    if status == 0:
+        return 'Disconnected'
+    elif status == 1:
+        return 'Connected'
+
 class MainWindow(wx.Frame):
 
     def __init__(self, parent, id, title):
@@ -15,9 +21,10 @@ class MainWindow(wx.Frame):
         
         # get list of openvpn connectons
         
-        self.connlist = []
+        #self.connlist = []
         self.ovpnpath = 'C:\\Program Files\\OpenVPN\\config'
         self.connstatus = {}
+        self.connnames = {}
         
         # init toolbar
         
@@ -72,15 +79,23 @@ class MainWindow(wx.Frame):
         return ovpnnames
         
     def updateList(self):
+        # save statuses of old connections to a dict of pairs name:status
+        oldstats = {}
+        for i, s in self.connnames.iteritems():
+            oldstats[s] = self.connstatus[i]
+        # get list of current connections
         newlist = self.getConnList(self.ovpnpath)
         self.list.DeleteAllItems()
-        for i, c in enumerate(newlist):
+        for i, s in enumerate(newlist):
             status = random.randint(0, 1)
-            self.connstatus[i] = status
+            if s in oldstats: # check if this connection has saved status
+                self.connstatus[i] = oldstats[s]
+            else:
+                self.connstatus[i] = status
+            self.connnames[i] = s
             self.list.InsertStringItem(i, '', imageIndex=status)
-            self.list.SetStringItem(i, col=1, label=c)
-            self.list.SetStringItem(i, col=2, label='Disconnected')
-        self.connlist = newlist
+            self.list.SetStringItem(i, col=1, label=s)
+            self.list.SetStringItem(i, col=2, label=connStatusString(status))
         
     def OnConnect(self, event):
         print 'connect'
