@@ -1,5 +1,6 @@
 import wx
 import os
+import subprocess
 import random
 
 id_CONNECT = wx.NewId()
@@ -22,7 +23,8 @@ class MainWindow(wx.Frame):
         # get list of openvpn connectons
         
         #self.connlist = []
-        self.ovpnpath = 'C:\\Program Files\\OpenVPN\\config'
+        self.ovpnpath = 'C:\\Program Files\\OpenVPN'
+        self.ovpnconfigpath = self.ovpnpath + '\\config'
         self.connstatus = {}
         self.connnames = {}
         
@@ -85,7 +87,7 @@ class MainWindow(wx.Frame):
             oldstats[s] = self.connstatus[i]
         
         # get list of current connections
-        newlist = self.getConnList(self.ovpnpath)
+        newlist = self.getConnList(self.ovpnconfigpath)
         self.list.DeleteAllItems()
         for i, s in enumerate(newlist):
             r = random.randint(0, 1)
@@ -105,7 +107,10 @@ class MainWindow(wx.Frame):
         print 'disconnect'        
 
     def OnEditCfg(self, event):
-        print 'edit cfg'
+        index = self.list.GetFocusedItem()
+        if index != -1:
+            subprocess.Popen(['notepad.exe',
+                               self.ovpnconfigpath + '\\' + self.connnames[index] + '.ovpn'])
                 
     def OnViewLog(self, event):
         print 'view log'        
@@ -119,10 +124,12 @@ class MainWindow(wx.Frame):
         if self.connstatus[index] == 0: # disconnected
             self.toolbar.EnableTool(id_CONNECT, True)
             self.toolbar.EnableTool(id_DISCONNECT, False)
+            self.toolbar.EnableTool(id_EDITCFG, True)
             self.toolbar.EnableTool(id_VIEWLOG, False)
         else:
             self.toolbar.EnableTool(id_CONNECT, False)
             self.toolbar.EnableTool(id_DISCONNECT, True)
+            self.toolbar.EnableTool(id_EDITCFG, True)
             self.toolbar.EnableTool(id_VIEWLOG, True)
     
     def OnItemDeselected(self, event):
