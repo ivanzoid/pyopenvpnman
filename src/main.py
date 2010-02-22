@@ -83,19 +83,20 @@ class MainWindow(wx.Frame):
         oldstats = {}
         for i, s in self.connnames.iteritems():
             oldstats[s] = self.connstatus[i]
+        
         # get list of current connections
         newlist = self.getConnList(self.ovpnpath)
         self.list.DeleteAllItems()
         for i, s in enumerate(newlist):
-            status = random.randint(0, 1)
+            r = random.randint(0, 1)
             if s in oldstats: # check if this connection has saved status
                 self.connstatus[i] = oldstats[s]
             else:
-                self.connstatus[i] = status
+                self.connstatus[i] = r
             self.connnames[i] = s
-            self.list.InsertStringItem(i, '', imageIndex=status)
+            self.list.InsertStringItem(i, '', imageIndex=self.connstatus[i])
             self.list.SetStringItem(i, col=1, label=s)
-            self.list.SetStringItem(i, col=2, label=connStatusString(status))
+            self.list.SetStringItem(i, col=2, label=connStatusString(self.connstatus[i]))
         
     def OnConnect(self, event):
         print 'connect'
