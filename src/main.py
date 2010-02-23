@@ -135,7 +135,8 @@ class MainWindow(wx.Frame):
                           '--config', self.ovpnconfigpath + '\\' + self.connnames[index] + '.ovpn',
                           '--management', '127.0.0.1', '{0}'.format(port),
                           '--management-query-passwords',
-                          '--management-log-cache', '200'])
+                          '--management-log-cache', '200'],
+                          cwd=self.ovpnconfigpath)
         self.connstatus[index] = 1
         self.updateConnection(index)
         self.updateToolbar(index)
