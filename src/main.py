@@ -1,13 +1,37 @@
 import wx
 import os
 import subprocess
+import socket, asyncore, asynchat
 import random
+from string import join
 
 id_CONNECT = wx.NewId()
 id_DISCONNECT = wx.NewId()
 id_EDITCFG = wx.NewId()
 id_VIEWLOG = wx.NewId()
 id_REFRESH = wx.NewId()
+
+class ManagementInterfaceHandler(asynchat.async_chat):
+    def __init__(self, addr, port):
+        asynchat.async_chat.__init__(self)
+        #print 'ManagementInterfaceHandler construct'
+        self.port = port
+        self.buf = ''
+        self.set_terminator('\n')
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connect((addr, port))
+        
+    def handle_connect(self):
+        #print 'handle_connect ({0})'.format(self.port)
+        asynchat.async_chat.handle_connect(self)
+    
+    def collect_incoming_data(self, data):
+        #print 'collect_incoming_data ({0}) data: "{1}"'.format(self.port, data)
+        self.buf += data
+        
+    def found_terminator(self):
+        #print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
+        self.buf = ''
 
 def connStatusString(status):
     if status == 0:
@@ -28,6 +52,7 @@ class MainWindow(wx.Frame):
         self.ovpnexe = self.ovpnpath + '\\bin\\openvpn.exe'
         self.connstatus = {}
         self.connnames = {}
+        self.connsocks = {}
         
         # init toolbar
         
@@ -75,6 +100,12 @@ class MainWindow(wx.Frame):
         
         self.list.Focus(0)
         self.list.Select(0)
+        
+        # create timer which will poll incoming data from sockets to 
+        # our ManagementInterfaceHandler
+        self.timer = wx.Timer(self, wx.NewId())
+        self.Bind(wx.EVT_TIMER, self.OnTimer)
+        self.timer.Start(20, wx.TIMER_CONTINUOUS)
         
     def getConnList(self, path):
         files = os.listdir(path)
@@ -124,6 +155,9 @@ class MainWindow(wx.Frame):
         if index != -1:
             self.list.SetItemImage(index, self.connstatus[index])
             self.list.SetStringItem(index, col=2, label=connStatusString(self.connstatus[index]))
+            
+    def OnTimer(self, event):
+        asyncore.poll(timeout=0)
         
     def OnConnect(self, event):
         print 'connect'
@@ -137,6 +171,7 @@ class MainWindow(wx.Frame):
                           '--management-query-passwords',
                           '--management-log-cache', '200'],
                           cwd=self.ovpnconfigpath)
+        self.connsocks[index] = ManagementInterfaceHandler('127.0.0.1', port)
         self.connstatus[index] = 1
         self.updateConnection(index)
         self.updateToolbar(index)
