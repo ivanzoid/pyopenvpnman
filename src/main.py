@@ -64,15 +64,20 @@ class ManagementInterfaceHandler(asynchat.async_chat):
         self.connect((addr, port))
         
     def handle_connect(self):
-        #print 'handle_connect ({0})'.format(self.port)
+        print 'handle_connect ({0})'.format(self.port)
         asynchat.async_chat.handle_connect(self)
+        
+    def handle_close(self):
+        print 'handle_close'
+        self.mainwnd.Disconnected(self.port)
+        asynchat.async_chat.handle_close(self)
     
     def collect_incoming_data(self, data):
         #print 'collect_incoming_data ({0}) data: "{1}"'.format(self.port, data)
         self.buf += data
         
     def found_terminator(self):
-        #print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
+        print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
         if self.buf.startswith(">PASSWORD:Need 'Auth'"):
             authdlg = AuthDlg(self.mainwnd)
             if authdlg.ShowModal() == wx.ID_OK:
@@ -81,6 +86,10 @@ class ManagementInterfaceHandler(asynchat.async_chat):
                 self.send('username "Auth" {0}\n'.format(username))
                 self.send('password "Auth" "{0}"\n'.format(escapePassword(password)))
             authdlg.Destroy()
+        elif self.buf.startswith('>HOLD:Waiting for hold release'):
+            self.send('log on all\n') # enable logging and dump current log contents
+            self.send('state on all\n') # ask openvpn to automatically report its state and show current
+            self.send('hold release\n') # tell openvpn to continue its start procedure 
         self.buf = ''
 
 def connStatusString(status):
@@ -103,6 +112,8 @@ class MainWindow(wx.Frame):
         self.connstatus = {}
         self.connnames = {}
         self.connsocks = {}
+        self.connports = {}
+        self.logbufs = {}
         
         # init toolbar
         
@@ -219,9 +230,11 @@ class MainWindow(wx.Frame):
                           '--config', self.ovpnconfigpath + '\\' + self.connnames[index] + '.ovpn',
                           '--management', '127.0.0.1', '{0}'.format(port),
                           '--management-query-passwords',
-                          '--management-log-cache', '200'],
+                          '--management-log-cache', '200',
+                          '--management-hold'],
                           cwd=self.ovpnconfigpath)
         self.connsocks[index] = ManagementInterfaceHandler(self, '127.0.0.1', port)
+        self.connports[index] = port
         self.connstatus[index] = 1
         self.updateConnection(index)
         self.updateToolbar(index)
@@ -232,9 +245,20 @@ class MainWindow(wx.Frame):
         if index == -1:
             return
         self.connsocks[index].send('signal SIGTERM\n')
-        self.connstatus[index] = 0
-        self.updateConnection(index)
-        self.updateToolbar(index)
+        #self.connstatus[index] = 0
+        #self.updateConnection(index)
+        #self.updateToolbar(index)
+    
+    def Disconnected(self, port):
+        index = 0
+        for i, p in self.connports.iteritems():
+            if p == port:
+                index = i
+                break
+        if self.connstatus[index] != 0:
+            self.connstatus[index] = 0
+            self.updateConnection(index)
+            self.updateToolbar(index)
 
     def OnEditCfg(self, event):
         index = self.list.GetFocusedItem();
