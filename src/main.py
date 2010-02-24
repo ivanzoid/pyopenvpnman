@@ -44,7 +44,8 @@ class AuthDlg(wx.Dialog):
 
         self.SetSizer(h)
         h.Fit(self)
-    
+        
+        self.username.SetFocus()
 
 def escapePassword(password):
     result = password.replace('\\', '\\\\').replace('"', '\\"').replace(' ', '\\ ')
@@ -73,14 +74,13 @@ class ManagementInterfaceHandler(asynchat.async_chat):
     def found_terminator(self):
         #print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
         if self.buf[0:9] == '>PASSWORD':
-            #self.mainwnd.CredentialsRequired(self.port)
             authdlg = AuthDlg(self.mainwnd)
-            authdlg.ShowModal()
-            username = authdlg.username.GetValue()
-            password = authdlg.password.GetValue()
+            if authdlg.ShowModal() == wx.ID_OK:
+                username = authdlg.username.GetValue()
+                password = authdlg.password.GetValue()
+                self.send('username "Auth" {0}\n'.format(username))
+                self.send('password "Auth" "{0}"\n'.format(escapePassword(password)))
             authdlg.Destroy()
-            self.send('username "Auth" {0}\n'.format(username))
-            self.send('password "Auth" "{0}"\n'.format(escapePassword(password)))
         self.buf = ''
 
 def connStatusString(status):
