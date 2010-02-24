@@ -73,7 +73,7 @@ class ManagementInterfaceHandler(asynchat.async_chat):
         
     def found_terminator(self):
         #print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
-        if self.buf[0:9] == '>PASSWORD':
+        if self.buf.startswith(">PASSWORD:Need 'Auth'"):
             authdlg = AuthDlg(self.mainwnd)
             if authdlg.ShowModal() == wx.ID_OK:
                 username = authdlg.username.GetValue()
