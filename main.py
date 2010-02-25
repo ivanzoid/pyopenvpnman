@@ -330,7 +330,7 @@ class MainWindow(wx.Frame):
         index = self.list.GetFocusedItem();
         if index != -1:
             subprocess.Popen(['notepad.exe',
-                               self.ovpnconfigpath + '\\' + self.connnames[index] + '.ovpn'])
+                               self.ovpnconfigpath + '\\' + self.connections[index].name + '.ovpn'])
                 
     def OnViewLog(self, event):
         print 'view log'
