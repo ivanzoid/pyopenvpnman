@@ -42,6 +42,7 @@ class LogDlg(wx.Dialog):
         h.AddSpacer(7)
 
         self.SetSizer(h)
+        self.log.SetFocus()
     
     def AppendText(self, text):
         self.log.AppendText(text)

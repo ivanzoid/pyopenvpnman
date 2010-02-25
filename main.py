@@ -56,6 +56,8 @@ class ManagementInterfaceHandler(asynchat.async_chat):
             self.send('hold release\n') # tell openvpn to continue its start procedure
         elif self.buf.startswith('>LOG:'):
             self.mainwnd.GotLogLine(self.port, self.buf[5:])
+        elif self.buf.startswith('>STATE:'):
+            self.mainwnd.GotStateLine(self.port, self.buf[7:])
         self.buf = ''
 
 def connStatusString(status):
@@ -92,20 +94,10 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, size=(400,300))
         
-        # get list of openvpn connectons
-        
-        #self.connlist = []
         self.ovpnpath = 'C:\\Program Files\\OpenVPN'
         self.ovpnconfigpath = self.ovpnpath + '\\config'
         self.ovpnexe = self.ovpnpath + '\\bin\\openvpn.exe'
         self.connections = {}
-        #self.connstatus = {}
-        #self.connnames = {}
-        #self.connsocks = {}
-        #self.connports = {}
-        #self.logbufs = {}
-        #self.logdlgs = {}
-        #self.logdlgshown = {}
         
         # init toolbar
         
@@ -196,7 +188,6 @@ class MainWindow(wx.Frame):
             return self.connectedImgId
         else: # ?
             return -1
-        
             
     def updateToolbar(self, index):
         if index == -1:
@@ -218,6 +209,11 @@ class MainWindow(wx.Frame):
                 self.toolbar.EnableTool(id_VIEWLOG, False)
             else:
                 self.toolbar.EnableTool(id_VIEWLOG, True)
+    
+    def maybeUpdateToolbar(self, index):
+        curindex = self.list.GetFocusedItem()
+        if curindex == index:
+            self.updateToolbar(index)
                 
     def updateConnection(self, index):
         if index != -1:
@@ -264,7 +260,7 @@ class MainWindow(wx.Frame):
         index = self.indexFromPort(port)
         self.connections[index].status = disconnected
         self.updateConnection(index)
-        self.updateToolbar(index)
+        self.maybeUpdateToolbar(index)
             
     def GotLogLine(self, port, line):
         print 'got log line: "{0}"'.format(line)
@@ -272,6 +268,18 @@ class MainWindow(wx.Frame):
         self.connections[index].logbuf.append(line)
         if self.connections[index].logdlg != None:
             self.connections[index].logdlg.AppendText(line)
+            
+    def GotStateLine(self, port, line):
+        print 'got state line: "{0}"'.format(line)
+        list = line.split(',', 2)
+        state = list[1]
+        print 'state:' + state
+        if state == 'CONNECTED':
+            index = self.indexFromPort(port)
+            print 'index: ' + str(index)
+            self.connections[index].status = connected
+            self.updateConnection(index)
+            self.maybeUpdateToolbar(index)
 
     def OnEditCfg(self, event):
         index = self.list.GetFocusedItem();
