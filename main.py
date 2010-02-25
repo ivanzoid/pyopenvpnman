@@ -59,12 +59,6 @@ class ManagementInterfaceHandler(asynchat.async_chat):
         elif self.buf.startswith('>STATE:'):
             self.mainwnd.GotStateLine(self.port, self.buf[7:])
         self.buf = ''
-
-def connStatusString(status):
-    if status == 0:
-        return 'Disconnected'
-    elif status == 1:
-        return 'Connected'
     
 # 'enum' of connection states
 (initial_disconnected, disconnected, failed, connecting, connected) = range(5)
@@ -72,19 +66,19 @@ def connStatusString(status):
 class Connection(object):
     def __init__(self, name):
         self.name = name
-        self.status = initial_disconnected
+        self.state = initial_disconnected # do not set this field directly, use MainWindow.setConnState()
         self.sock = None # ManagementInterfaceHandler
         self.port = 0
         self.logbuf = []
         self.logdlg = None # LogDlg
-    def statusString(self):
-        if self.status == initial_disconnected or self.status == disconnected:
+    def stateString(self):
+        if self.state == initial_disconnected or self.state == disconnected:
             return 'Disconnected'
-        elif self.status == failed:
+        elif self.state == failed:
             return 'Error'
-        elif self.status == connecting:
+        elif self.state == connecting:
             return 'Connecting'
-        elif self.status == connected:
+        elif self.state == connected:
             return 'Connected'
         else:
             return 'Error'
@@ -97,7 +91,17 @@ class MainWindow(wx.Frame):
         self.ovpnpath = 'C:\\Program Files\\OpenVPN'
         self.ovpnconfigpath = self.ovpnpath + '\\config'
         self.ovpnexe = self.ovpnpath + '\\bin\\openvpn.exe'
+        self.traymsg = 'OpenVPN Connection Manager'
         self.connections = {}
+        
+        # init tray icon
+        
+        self.notconnectedIcon = wx.Icon('images/fail32.ico', wx.BITMAP_TYPE_ICO)
+        self.connectingIcon = wx.Icon('images/waiting32.ico', wx.BITMAP_TYPE_ICO)
+        self.connectedIcon = wx.Icon('images/ack32.ico', wx.BITMAP_TYPE_ICO)
+        
+        self.trayicon = wx.TaskBarIcon()
+        self.trayicon.SetIcon(self.notconnectedIcon, self.traymsg)
         
         # init toolbar
         
@@ -134,7 +138,7 @@ class MainWindow(wx.Frame):
         
         self.list.InsertColumn(0, '')
         self.list.InsertColumn(1, 'Name')
-        self.list.InsertColumn(2, 'Status')
+        self.list.InsertColumn(2, 'state')
         
         self.updateList()
             
@@ -175,16 +179,38 @@ class MainWindow(wx.Frame):
                 self.connections[i] = prevconns[s]
             else:
                 self.connections[i] = Connection(s)
-            self.list.InsertStringItem(i, '', self.imgIndexByStatus(self.connections[i].status))
+            self.list.InsertStringItem(i, '', self.imgIndexBystate(self.connections[i].state))
             self.list.SetStringItem(i, 1, s)
-            self.list.SetStringItem(i, 2, self.connections[i].statusString())
+            self.list.SetStringItem(i, 2, self.connections[i].stateString())
+    
+    def trayIconByState(self, state):
+        if state == connecting:
+            return self.connectingIcon
+        elif state == connected:
+            return self.connectedIcon
+        else:
+            return self.notconnectedIcon
+    
+    def updateTrayIcon(self):
+        maxstate = disconnected
+        for c in self.connections.itervalues():
+            if c.state > maxstate:
+                maxstate = c.state
+        self.trayicon.SetIcon(self.trayIconByState(maxstate), self.traymsg)
             
-    def imgIndexByStatus(self, status):
-        if status == initial_disconnected or status == disconnected or status == failed:
+    def setConnState(self, index, state):
+        self.connections[index].state = state
+        if state == connected:
+            self.trayicon.SetIcon(self.trayIconByState(state), self.traymsg)
+        else:
+            self.updateTrayIcon()
+            
+    def imgIndexBystate(self, state):
+        if state == initial_disconnected or state == disconnected or state == failed:
             return self.disconnectedImgId
-        elif status == connecting:
+        elif state == connecting:
             return self.connectingImgId
-        elif status == connected:
+        elif state == connected:
             return self.connectedImgId
         else: # ?
             return -1
@@ -197,9 +223,9 @@ class MainWindow(wx.Frame):
             self.toolbar.EnableTool(id_VIEWLOG, False)
         else: # have selected item
             self.toolbar.EnableTool(id_EDITCFG, True)            
-            if self.connections[index].status == disconnected \
-            or self.connections[index].status == initial_disconnected \
-            or self.connections[index].status == failed:
+            if self.connections[index].state == disconnected \
+            or self.connections[index].state == initial_disconnected \
+            or self.connections[index].state == failed:
                 self.toolbar.EnableTool(id_CONNECT, True)
                 self.toolbar.EnableTool(id_DISCONNECT, False)
             else:
@@ -217,8 +243,8 @@ class MainWindow(wx.Frame):
                 
     def updateConnection(self, index):
         if index != -1:
-            self.list.SetItemImage(index, self.imgIndexByStatus(self.connections[index].status))
-            self.list.SetStringItem(index, 2, self.connections[index].statusString())
+            self.list.SetItemImage(index, self.imgIndexBystate(self.connections[index].state))
+            self.list.SetStringItem(index, 2, self.connections[index].stateString())
     
     def indexFromPort(self, port):
         for i, c in self.connections.iteritems():
@@ -244,7 +270,7 @@ class MainWindow(wx.Frame):
                           cwd=self.ovpnconfigpath)
         self.connections[index].sock = ManagementInterfaceHandler(self, '127.0.0.1', port)
         self.connections[index].port = port
-        self.connections[index].status = connecting
+        self.setConnState(index, connecting)
         self.updateConnection(index)
         self.updateToolbar(index)
         
@@ -258,7 +284,7 @@ class MainWindow(wx.Frame):
     # from ManagementInterfaceHandler
     def Disconnected(self, port):
         index = self.indexFromPort(port)
-        self.connections[index].status = disconnected
+        self.setConnState(index, disconnected)
         self.updateConnection(index)
         self.maybeUpdateToolbar(index)
             
@@ -277,7 +303,7 @@ class MainWindow(wx.Frame):
         if state == 'CONNECTED':
             index = self.indexFromPort(port)
             print 'index: ' + str(index)
-            self.connections[index].status = connected
+            self.setConnState(index, connected)
             self.updateConnection(index)
             self.maybeUpdateToolbar(index)
 
