@@ -103,6 +103,11 @@ class MainWindow(wx.Frame):
         self.trayicon = wx.TaskBarIcon()
         self.trayicon.SetIcon(self.notconnectedIcon, self.traymsg)
         
+        self.wndshown = True
+        
+        self.Bind(wx.EVT_ICONIZE, self.OnIconize)
+        self.trayicon.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self.OnTrayIconClick)
+        
         # init toolbar
         
         self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT | wx.TB_NO_TOOLTIPS )
@@ -251,6 +256,20 @@ class MainWindow(wx.Frame):
             if c.port == port:
                 return i
         return -1
+    
+    def OnIconize(self, event):
+        self.Hide()
+        self.wndshown = False
+        
+    def OnTrayIconClick(self, event):
+        if self.wndshown:
+            self.Hide()
+            self.wndshown = False
+        else:
+            self.Iconize(False)
+            self.Show(True)
+            self.Raise()
+            self.wndshown = True
             
     def OnTimer(self, event):
         asyncore.poll(timeout=0)
