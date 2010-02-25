@@ -6,8 +6,8 @@ class LogDlg(wx.Dialog):
         
         self.port = port
 
-        self.log = wx.TextCtrl(self, -1, '', style=(wx.TE_RICH2 | wx.TE_MULTILINE
-            | wx.TE_READONLY | wx.HSCROLL | wx.TE_BESTWRAP))
+        self.log = wx.TextCtrl(self, -1, '', style=(wx.TE_RICH | wx.TE_MULTILINE
+            | wx.TE_READONLY | wx.HSCROLL), size=(400,300))
         font = wx.Font(face='Courier New', pointSize=8, family=wx.FONTFAMILY_MODERN,
                 style=wx.FONTSTYLE_NORMAL, weight=wx.FONTWEIGHT_NORMAL)
         defstyle=wx.TextAttr(font=font)
@@ -43,6 +43,7 @@ class LogDlg(wx.Dialog):
 
         self.SetSizer(h)
         self.log.SetFocus()
+        self.log.ShowPosition(self.log.GetLastPosition())
     
     def AppendText(self, text):
         self.log.AppendText(text)
@@ -50,7 +51,8 @@ class LogDlg(wx.Dialog):
     def OnCopy(self, event):
         self.log.SetSelection(-1, -1) # select all text
         self.log.Copy() # copies to clipboard
-        self.log.SetSelection(0, 0) # deselect
+        lastpos = self.log.GetLastPosition()
+        self.log.SetSelection(lastpos, lastpos) # deselect
 
     def OnClose(self, event):
         print 'Log:OnClose'        

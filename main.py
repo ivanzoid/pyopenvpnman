@@ -2,6 +2,7 @@ import wx
 import os
 import subprocess
 import socket, asyncore, asynchat
+from datetime import datetime
 
 from authdlg import *
 from logdlg import *
@@ -306,13 +307,28 @@ class MainWindow(wx.Frame):
         self.setConnState(index, disconnected)
         self.updateConnection(index)
         self.maybeUpdateToolbar(index)
+        
+    def ParsedLogLine(self, line):
+        tokens = line.split(',', 2)
+        unixtime = tokens[0]
+        flags = tokens[1]
+        msg = tokens[2]
+        time = datetime.fromtimestamp(float(unixtime))
+        str_time = time.ctime()
+        flags_map = {'I':'INFO', 'F':'FATAL', 'N':'ERROR', 'W':'WARNING', 'D':'DEBUG'}
+        str_flags = ''
+        if flags in flags_map:
+            str_flags = ' ' + flags_map[flags] + ':'
+        #return str_time + str_flags + ' ' + msg
+        return str_time + ' ' + msg
             
     def GotLogLine(self, port, line):
         print 'got log line: "{0}"'.format(line)
-        index = self.indexFromPort(port)        
-        self.connections[index].logbuf.append(line)
+        index = self.indexFromPort(port)
+        parsedline = self.ParsedLogLine(line)
+        self.connections[index].logbuf.append(parsedline)
         if self.connections[index].logdlg != None:
-            self.connections[index].logdlg.AppendText(line)
+            self.connections[index].logdlg.AppendText(parsedline)
             
     def GotStateLine(self, port, line):
         print 'got state line: "{0}"'.format(line)
