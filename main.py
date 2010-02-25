@@ -29,11 +29,11 @@ class ManagementInterfaceHandler(asynchat.async_chat):
         self.connect((addr, port))
         
     def handle_connect(self):
-        print 'handle_connect ({0})'.format(self.port)
+        #print 'handle_connect ({0})'.format(self.port)
         asynchat.async_chat.handle_connect(self)
         
     def handle_close(self):
-        print 'handle_close'
+        #print 'handle_close'
         self.mainwnd.Disconnected(self.port)
         asynchat.async_chat.handle_close(self)
     
@@ -42,7 +42,7 @@ class ManagementInterfaceHandler(asynchat.async_chat):
         self.buf += data
         
     def found_terminator(self):
-        print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
+        #print 'found_terminator ({0}) buf: "{1}"'.format(self.port, self.buf)
         if self.buf.startswith(">PASSWORD:Need 'Auth'"):
             authdlg = AuthDlg(self.mainwnd)
             if authdlg.ShowModal() == wx.ID_OK:
@@ -113,11 +113,11 @@ class MainWindow(wx.Frame):
         
         self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT | wx.TB_NO_TOOLTIPS )
 
-        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', wx.Bitmap('images/connect.png', wx.BITMAP_TYPE_PNG))
-        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', wx.Bitmap('images/disconnect.png', wx.BITMAP_TYPE_PNG))
-        editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/editcfg.png', wx.BITMAP_TYPE_PNG))
-        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', wx.Bitmap('images/viewlog.png', wx.BITMAP_TYPE_PNG))
-        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/viewlog.png', wx.BITMAP_TYPE_PNG))
+        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', wx.Bitmap('images/connect32.ico'))
+        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', wx.Bitmap('images/disconnect32.ico'))
+        editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/edit32.ico'))
+        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', wx.Bitmap('images/log32.ico'))
+        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.ico'))
         
         self.Bind(wx.EVT_TOOL, self.OnConnect, connect, id_CONNECT)
         self.Bind(wx.EVT_TOOL, self.OnDisconnect, disconnect, id_DISCONNECT)
@@ -135,16 +135,16 @@ class MainWindow(wx.Frame):
         # init list view
 
         self.imgs = wx.ImageList(24, 24, mask=True)
-        self.disconnectedImgId = self.imgs.Add(wx.Bitmap('images/notconnected24.png', wx.BITMAP_TYPE_PNG))
-        self.connectedImgId = self.imgs.Add(wx.Bitmap('images/connected24.png', wx.BITMAP_TYPE_PNG))
-        self.connectingImgId = self.imgs.Add(wx.Bitmap('images/connecting24.png', wx.BITMAP_TYPE_PNG))
+        self.disconnectedImgId = self.imgs.Add(wx.Bitmap('images/notconnected24.png'))
+        self.connectedImgId = self.imgs.Add(wx.Bitmap('images/connected24.png'))
+        self.connectingImgId = self.imgs.Add(wx.Bitmap('images/connecting24.png'))
 
         self.list = wx.ListCtrl(self, -1, style=(wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES))
         self.list.SetImageList(self.imgs, wx.IMAGE_LIST_SMALL)
         
         self.list.InsertColumn(0, '')
         self.list.InsertColumn(1, 'Name')
-        self.list.InsertColumn(2, 'state')
+        self.list.InsertColumn(2, 'Status')
         
         self.updateList()
             
@@ -185,7 +185,7 @@ class MainWindow(wx.Frame):
                 self.connections[i] = prevconns[s]
             else:
                 self.connections[i] = Connection(s)
-            self.list.InsertStringItem(i, '', self.imgIndexBystate(self.connections[i].state))
+            self.list.InsertStringItem(i, '', self.imgIndexByState(self.connections[i].state))
             self.list.SetStringItem(i, 1, s)
             self.list.SetStringItem(i, 2, self.connections[i].stateString())
     
@@ -211,7 +211,7 @@ class MainWindow(wx.Frame):
         else:
             self.updateTrayIcon()
             
-    def imgIndexBystate(self, state):
+    def imgIndexByState(self, state):
         if state == initial_disconnected or state == disconnected or state == failed:
             return self.disconnectedImgId
         elif state == connecting:
@@ -249,7 +249,7 @@ class MainWindow(wx.Frame):
                 
     def updateConnection(self, index):
         if index != -1:
-            self.list.SetItemImage(index, self.imgIndexBystate(self.connections[index].state))
+            self.list.SetItemImage(index, self.imgIndexByState(self.connections[index].state))
             self.list.SetStringItem(index, 2, self.connections[index].stateString())
     
     def indexFromPort(self, port):
@@ -276,7 +276,7 @@ class MainWindow(wx.Frame):
         asyncore.poll(timeout=0)
         
     def OnConnect(self, event):
-        print 'connect'
+        #print 'connect'
         index = self.list.GetFocusedItem()
         if index == -1:
             return
@@ -295,7 +295,7 @@ class MainWindow(wx.Frame):
         self.updateToolbar(index)
         
     def OnDisconnect(self, event):
-        print 'disconnect'
+        #print 'disconnect'
         index = self.list.GetFocusedItem()
         if index == -1:
             return
@@ -323,7 +323,7 @@ class MainWindow(wx.Frame):
         return str_time + ' ' + msg
             
     def GotLogLine(self, port, line):
-        print 'got log line: "{0}"'.format(line)
+        #print 'got log line: "{0}"'.format(line)
         index = self.indexFromPort(port)
         parsedline = self.ParsedLogLine(line)
         self.connections[index].logbuf.append(parsedline)
@@ -331,13 +331,11 @@ class MainWindow(wx.Frame):
             self.connections[index].logdlg.AppendText(parsedline)
             
     def GotStateLine(self, port, line):
-        print 'got state line: "{0}"'.format(line)
+        #print 'got state line: "{0}"'.format(line)
         list = line.split(',', 2)
         state = list[1]
-        print 'state:' + state
         if state == 'CONNECTED':
             index = self.indexFromPort(port)
-            print 'index: ' + str(index)
             self.setConnState(index, connected)
             self.updateConnection(index)
             self.maybeUpdateToolbar(index)
@@ -349,7 +347,7 @@ class MainWindow(wx.Frame):
                                self.ovpnconfigpath + '\\' + self.connections[index].name + '.ovpn'])
                 
     def OnViewLog(self, event):
-        print 'view log'
+        #print 'view log'
         index = self.list.GetFocusedItem();
         if self.connections[index].logdlg != None: # ?
             return
@@ -362,7 +360,7 @@ class MainWindow(wx.Frame):
         self.updateToolbar(index)
         
     def OnLogDlgClose(self, event):
-        print 'OnLogDlgClose'
+        #print 'OnLogDlgClose'
         dlg = event.GetEventObject()
         port = dlg.port
         index = self.indexFromPort(port)        
@@ -372,7 +370,7 @@ class MainWindow(wx.Frame):
         
     def OnRefresh(self, event):
         self.updateList()
-        print 'refresh'
+        #print 'refresh'
         
     def OnItemSelected(self, event):
         self.updateToolbar(event.m_itemIndex)
