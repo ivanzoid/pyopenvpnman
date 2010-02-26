@@ -115,13 +115,13 @@ class MainWindow(wx.Frame):
         
         # init toolbar
         
-        self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT | wx.TB_NO_TOOLTIPS )
+        self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT)
 
-        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', bitmap=wx.Bitmap('images/connect32.png'), bmpDisabled=wx.Bitmap('images/connect32gray.png'))
-        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', bitmap=wx.Bitmap('images/disconnect32.png'), bmpDisabled=wx.Bitmap('images/disconnect32gray.png'))
+        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', bitmap=wx.Bitmap('images/connect32.png'))
+        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', bitmap=wx.Bitmap('images/disconnect32.png'))
         editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/editcfg32.png'))
-        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', bitmap=wx.Bitmap('images/viewlog32.png'), bmpDisabled=wx.Bitmap('images/viewlog32gray.png'))
-        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.png'))
+        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', bitmap=wx.Bitmap('images/viewlog32.png'))
+        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.png'), shortHelp='Reread OpenVPN config files list')
         aboutBtn = self.toolbar.AddLabelTool(id_ABOUT, 'About', wx.Bitmap('images/about32.png'))
         
         self.Bind(wx.EVT_TOOL, self.OnConnect, connect, id_CONNECT)
