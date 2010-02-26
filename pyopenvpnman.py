@@ -202,6 +202,8 @@ class MainWindow(wx.Frame):
 
     def getConnList(self, path):
         """Returns list of connections in the OpenVPN's config directory."""
+        if not os.path.exists(path):
+            return []
         files = os.listdir(path)
         ovpnfiles = filter(lambda s: s.endswith('.ovpn'), files)
         ovpnnames = map(lambda s: s[:-5], ovpnfiles)
