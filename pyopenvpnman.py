@@ -1,5 +1,6 @@
 import wx
 import os
+import sys
 import subprocess
 import socket, asyncore, asynchat
 from datetime import datetime
@@ -92,20 +93,30 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, size=(400,300))
         
+        # check cmdline options
+        
         self.ovpnpath = 'C:\\Program Files\\OpenVPN'
+        
+        if len(sys.argv) == 3:
+            if sys.argv[1] == '--openvpn':
+                self.ovpnpath = sys.argv[2]
+                
+                
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/'                
         self.ovpnconfigpath = self.ovpnpath + '\\config'
         self.ovpnexe = self.ovpnpath + '\\bin\\openvpn.exe'
         self.traymsg = 'OpenVPN Connection Manager'
+        
         self.connections = {}
         
         # set app icon
-        self.SetIcon(wx.Icon('images/app.ico', wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(self.path + 'images/app.ico', wx.BITMAP_TYPE_ICO))
         
         # init tray icon
         
-        self.notconnectedIcon = wx.Icon('images/fail16.ico', wx.BITMAP_TYPE_ICO)
-        self.waitingIcon = wx.Icon('images/waiting16.ico', wx.BITMAP_TYPE_ICO)
-        self.connectedIcon = wx.Icon('images/ack16.ico', wx.BITMAP_TYPE_ICO)
+        self.notconnectedIcon = wx.Icon(self.path + 'images/fail16.ico', wx.BITMAP_TYPE_ICO)
+        self.waitingIcon = wx.Icon(self.path + 'images/waiting16.ico', wx.BITMAP_TYPE_ICO)
+        self.connectedIcon = wx.Icon(self.path + 'images/ack16.ico', wx.BITMAP_TYPE_ICO)
         
         self.trayicon = wx.TaskBarIcon()
         self.trayicon.SetIcon(self.notconnectedIcon, self.traymsg)
@@ -119,18 +130,18 @@ class MainWindow(wx.Frame):
         
         self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT)
 
-        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', bitmap=wx.Bitmap('images/connect32.png'))
-        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', bitmap=wx.Bitmap('images/disconnect32.png'))
-        editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/editcfg32.png'))
-        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', bitmap=wx.Bitmap('images/viewlog32.png'))
-        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.png'), shortHelp='Reread OpenVPN config files list')
-        aboutBtn = self.toolbar.AddLabelTool(id_ABOUT, 'About', wx.Bitmap('images/about32.png'))
+        connectBtn = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', bitmap=wx.Bitmap(self.path + 'images/connect32.png'))
+        disconnectBtn = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', bitmap=wx.Bitmap(self.path + 'images/disconnect32.png'))
+        editcfgBtn = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap(self.path + 'images/editcfg32.png'))
+        viewlogBtn = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', bitmap=wx.Bitmap(self.path + 'images/viewlog32.png'))
+        refreshBtn = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap(self.path + 'images/refresh32.png'), shortHelp='Reread OpenVPN config files list')
+        aboutBtn = self.toolbar.AddLabelTool(id_ABOUT, 'About', wx.Bitmap(self.path + 'images/about32.png'))
         
-        self.Bind(wx.EVT_TOOL, self.OnConnect, connect, id_CONNECT)
-        self.Bind(wx.EVT_TOOL, self.OnDisconnect, disconnect, id_DISCONNECT)
-        self.Bind(wx.EVT_TOOL, self.OnEditCfg, editcfg, id_EDITCFG)
-        self.Bind(wx.EVT_TOOL, self.OnViewLog, viewlog, id_VIEWLOG)
-        self.Bind(wx.EVT_TOOL, self.OnRefresh, refresh, id_REFRESH)
+        self.Bind(wx.EVT_TOOL, self.OnCmdConnect, connectBtn, id_CONNECT)
+        self.Bind(wx.EVT_TOOL, self.OnCmdDisconnect, disconnectBtn, id_DISCONNECT)
+        self.Bind(wx.EVT_TOOL, self.OnCmdEditCfg, editcfgBtn, id_EDITCFG)
+        self.Bind(wx.EVT_TOOL, self.OnCmdViewLog, viewlogBtn, id_VIEWLOG)
+        self.Bind(wx.EVT_TOOL, self.OnCmdRefresh, refreshBtn, id_REFRESH)
         self.Bind(wx.EVT_TOOL, self.OnCmdAbout, aboutBtn, id_ABOUT)
         
         self.toolbar.Realize()
@@ -143,9 +154,9 @@ class MainWindow(wx.Frame):
         # init list view
 
         self.imgs = wx.ImageList(24, 24, mask=True)
-        self.disconnectedImgId = self.imgs.Add(wx.Bitmap('images/disconnected24.png'))
-        self.connectedImgId = self.imgs.Add(wx.Bitmap('images/connected24.png'))
-        self.waitingImgId = self.imgs.Add(wx.Bitmap('images/waiting24.png'))
+        self.disconnectedImgId = self.imgs.Add(wx.Bitmap(self.path + 'images/disconnected24.png'))
+        self.connectedImgId = self.imgs.Add(wx.Bitmap(self.path + 'images/connected24.png'))
+        self.waitingImgId = self.imgs.Add(wx.Bitmap(self.path + 'images/waiting24.png'))
 
         self.list = wx.ListCtrl(self, -1, style=(wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES))
         self.list.SetImageList(self.imgs, wx.IMAGE_LIST_SMALL)
@@ -172,13 +183,26 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_TIMER, self.OnTimer)
         self.timer.Start(20, wx.TIMER_CONTINUOUS)
         
+    def imgIndexByState(self, state):
+        """Returns image index from the imagelist to be used in listctrl in list of connctions corresponding to the given state of connection."""        
+        if state == disconnected or state == failed:
+            return self.disconnectedImgId
+        elif state == connecting or state == disconnecting:
+            return self.waitingImgId
+        elif state == connected:
+            return self.connectedImgId
+        else: # ?
+            return -1
+        
     def getConnList(self, path):
+        """Returns list of connections in the OpenVPN's config directory."""
         files = os.listdir(path)
         ovpnfiles = filter(lambda s: s.endswith('.ovpn'), files)
         ovpnnames = map(lambda s: s[:-5], ovpnfiles)
         return ovpnnames
         
     def updateList(self):
+        """Updates list of connections in the main window."""
         # save all previous (current) connections to a dict of pairs name:connection
         prevconns = {}
         for c in self.connections.itervalues():
@@ -197,42 +221,15 @@ class MainWindow(wx.Frame):
             self.list.InsertStringItem(i, '', self.imgIndexByState(self.connections[i].state))
             self.list.SetStringItem(i, 1, s)
             self.list.SetStringItem(i, 2, self.connections[i].stateString())
-    
-    def trayIconByState(self, state):
-        if state == connecting or state == disconnecting:
-            return self.waitingIcon
-        elif state == connected:
-            return self.connectedIcon
-        else:
-            return self.notconnectedIcon
-    
-    def updateTrayIcon(self):
-        maxstate = disconnected
-        for c in self.connections.itervalues():
-            if c.state > maxstate:
-                maxstate = c.state
-        self.trayicon.SetIcon(self.trayIconByState(maxstate), self.traymsg)
             
-    def setConnState(self, index, state):
-        self.connections[index].state = state
-        if state == disconnected:
-            self.connections[index].port = 0
-        if state == connected:
-            self.trayicon.SetIcon(self.trayIconByState(state), self.traymsg)
-        else:
-            self.updateTrayIcon()
-            
-    def imgIndexByState(self, state):
-        if state == disconnected or state == failed:
-            return self.disconnectedImgId
-        elif state == connecting or state == disconnecting:
-            return self.waitingImgId
-        elif state == connected:
-            return self.connectedImgId
-        else: # ?
-            return -1
-            
+    def updateConnection(self, index):
+        """Updates connection's list item given by its index."""
+        if index != -1:
+            self.list.SetItemImage(index, self.imgIndexByState(self.connections[index].state))
+            self.list.SetStringItem(index, 2, self.connections[index].stateString())
+
     def updateToolbar(self, index):
+        """Repaints toolbar based on selected connection and its state."""
         if index == -1:
             self.toolbar.EnableTool(id_CONNECT, False)
             self.toolbar.EnableTool(id_DISCONNECT, False)
@@ -253,22 +250,37 @@ class MainWindow(wx.Frame):
                 self.toolbar.EnableTool(id_VIEWLOG, True)
     
     def maybeUpdateToolbar(self, index):
+        """Checks if connection supplied by index is current and in that case repaints it."""
         curindex = self.list.GetFocusedItem()
         if curindex == index:
             self.updateToolbar(index)
-                
-    def updateConnection(self, index):
-        if index != -1:
-            self.list.SetItemImage(index, self.imgIndexByState(self.connections[index].state))
-            self.list.SetStringItem(index, 2, self.connections[index].stateString())
+            
+    def OnItemSelected(self, event):
+        self.updateToolbar(event.m_itemIndex)
     
-    def indexFromPort(self, port):
-        for i, c in self.connections.iteritems():
-            if c.port == port:
-                return i
-        return -1
+    def OnItemDeselected(self, event):
+        if self.list.GetSelectedItemCount() == 0:
+            self.updateToolbar(-1)
     
+    def trayIconByState(self, state):
+        """Return corresponding wx.Icon for tray depending on the given state of connection."""
+        if state == connecting or state == disconnecting:
+            return self.waitingIcon
+        elif state == connected:
+            return self.connectedIcon
+        else:
+            return self.notconnectedIcon
+    
+    def updateTrayIcon(self):
+        """Updates tray icon. If there are at least one 'conected' connection, shows 'connected' icon, otherwise shows 'disconnected' icon."""
+        maxstate = disconnected
+        for c in self.connections.itervalues():
+            if c.state > maxstate:
+                maxstate = c.state
+        self.trayicon.SetIcon(self.trayIconByState(maxstate), self.traymsg)
+
     def OnIconize(self, event):
+        """Called when user clicks minimize button."""
         self.Hide()
         self.wndshown = False
         
@@ -282,10 +294,22 @@ class MainWindow(wx.Frame):
             self.Raise()
             self.wndshown = True
             
+    def setConnState(self, index, state):
+        """Sets the state of connection given by index (which is its Id from listctrl) and updates trayicon if necessary."""
+        self.connections[index].state = state
+        if state == disconnected:
+            self.connections[index].port = 0
+        if state == connected:
+            self.trayicon.SetIcon(self.trayIconByState(state), self.traymsg)
+        else:
+            self.updateTrayIcon()
+            
     def OnTimer(self, event):
+        """Used for detecting if there is incoming data in the sockets."""
         asyncore.poll(timeout=0)
-        
+                
     def getNextAvailablePort(self):
+        """Returns next minimal unused port starting from 10598."""
         minport = 10598
         found = False
         while not found:
@@ -297,9 +321,16 @@ class MainWindow(wx.Frame):
                         minport += 1
                         break
         return minport
+    
+    def indexFromPort(self, port):
+        """Returns index (id) of connected connection based on its port."""
+        for i, c in self.connections.iteritems():
+            if c.port == port:
+                return i
+        return -1
 
-    def OnConnect(self, event):
-        #print 'connect'
+    def OnCmdConnect(self, event):
+        #print 'OnCmdConnect'
         index = self.list.GetFocusedItem()
         if index == -1:
             return
@@ -320,22 +351,8 @@ class MainWindow(wx.Frame):
         self.updateConnection(index)
         self.updateToolbar(index)
         
-    def OnDisconnect(self, event):
-        #print 'disconnect'
-        index = self.list.GetFocusedItem()
-        if index == -1:
-            return
-        self.setConnState(index, disconnecting)
-        self.connections[index].sock.send('signal SIGTERM\n')
-
-    # from ManagementInterfaceHandler
-    def Disconnected(self, port):
-        index = self.indexFromPort(port)
-        self.setConnState(index, disconnected)
-        self.updateConnection(index)
-        self.maybeUpdateToolbar(index)
-        
-    def ParsedLogLine(self, line):
+    def ParseLogLine(self, line):
+        """Parses and returns log line received from OpenVPN Management Interface."""
         tokens = line.split(',', 2)
         unixtime = tokens[0]
         flags = tokens[1]
@@ -350,14 +367,16 @@ class MainWindow(wx.Frame):
         return str_time + ' ' + msg
             
     def GotLogLine(self, port, line):
+        """Called from ManagementInterfaceHandler when new log line is received."""
         #print 'got log line: "{0}"'.format(line)
         index = self.indexFromPort(port)
-        parsedline = self.ParsedLogLine(line)
+        parsedline = self.ParseLogLine(line)
         self.connections[index].logbuf.append(parsedline)
         if self.connections[index].logdlg != None:
             self.connections[index].logdlg.AppendText(parsedline)
             
     def GotStateLine(self, port, line):
+        """Called from ManagementInterfaceHandler when new line describing current OpenVPN's state is received."""
         #print 'got state line: "{0}"'.format(line)
         list = line.split(',', 2)
         state = list[1]
@@ -366,15 +385,31 @@ class MainWindow(wx.Frame):
             self.setConnState(index, connected)
             self.updateConnection(index)
             self.maybeUpdateToolbar(index)
+        
+    def OnCmdDisconnect(self, event):
+        #print 'OnCmdDisconnect'
+        index = self.list.GetFocusedItem()
+        if index == -1:
+            return
+        self.setConnState(index, disconnecting)
+        self.connections[index].sock.send('signal SIGTERM\n')
 
-    def OnEditCfg(self, event):
+    # from ManagementInterfaceHandler
+    def Disconnected(self, port):
+        """Called from ManagementInterfaceHandler when socket to OpenVPN Management Interface is closed."""
+        index = self.indexFromPort(port)
+        self.setConnState(index, disconnected)
+        self.updateConnection(index)
+        self.maybeUpdateToolbar(index)
+        
+    def OnCmdEditCfg(self, event):
         index = self.list.GetFocusedItem();
         if index != -1:
             subprocess.Popen(['notepad.exe',
                                self.ovpnconfigpath + '\\' + self.connections[index].name + '.ovpn'])
                 
-    def OnViewLog(self, event):
-        #print 'view log'
+    def OnCmdViewLog(self, event):
+        #print 'OnCmdViewLog'
         index = self.list.GetFocusedItem();
         if self.connections[index].logdlg != None: # ?
             return
@@ -387,6 +422,7 @@ class MainWindow(wx.Frame):
         self.updateToolbar(index)
         
     def OnLogDlgClose(self, event):
+        """Called when user closes Log window."""
         #print 'OnLogDlgClose'
         dlg = event.GetEventObject()
         port = dlg.port
@@ -395,9 +431,9 @@ class MainWindow(wx.Frame):
         self.connections[index].logdlg = None
         self.updateToolbar(index) 
         
-    def OnRefresh(self, event):
+    def OnCmdRefresh(self, event):
+        #print 'OnCmdRefresh'        
         self.updateList()
-        #print 'refresh'
         
     def OnCmdAbout(self, event):
         aboutinfo = wx.AboutDialogInfo()
@@ -406,17 +442,10 @@ class MainWindow(wx.Frame):
         #aboutinfo.SetDescription('Description')
         #aboutinfo.SetCopyright('(C) 2010')
         
-        # see info about other possible fields here: http://docs.wxwidgets.org/stable/wx_wxaboutdialoginfo.html#wxaboutdialoginfo
+        # see info about other possible fields here: http://docs.wxwidgets.org/stable/wx_wxaboutdialoginfo.html
     
         wx.AboutBox(aboutinfo)
         
-    def OnItemSelected(self, event):
-        self.updateToolbar(event.m_itemIndex)
-    
-    def OnItemDeselected(self, event):
-        if self.list.GetSelectedItemCount() == 0:
-            self.updateToolbar(-1)
-
 class App(wx.App):
     def OnInit(self):
         wnd = MainWindow(None, -1, "OpenVPN Connection Manager")
@@ -426,4 +455,3 @@ class App(wx.App):
 if __name__ == '__main__':
     app = App(0)
     app.MainLoop()
-

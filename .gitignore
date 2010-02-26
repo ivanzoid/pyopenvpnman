@@ -1,6 +1,7 @@
 .project
 .pydevproject
 *.pyc
+*.pyo
 dist
 build
 msvcp90.dll
