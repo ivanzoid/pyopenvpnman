@@ -1,8 +1,8 @@
 import wx
 
 class LogDlg(wx.Dialog):
-    def __init__(self, parent, port):
-        wx.Dialog.__init__(self, parent, -1, 'Log', size=(400,300), style=(wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER))
+    def __init__(self, parent, port, name):
+        wx.Dialog.__init__(self, parent, -1, 'Log for ' + name, size=(400,300), style=(wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER))
         
         self.port = port
 

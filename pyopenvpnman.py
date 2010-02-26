@@ -63,23 +63,25 @@ class ManagementInterfaceHandler(asynchat.async_chat):
         self.buf = ''
     
 # 'enum' of connection states
-(initial_disconnected, disconnected, failed, connecting, connected) = range(5)
+(disconnected, failed, connecting, disconnecting, connected) = range(5)
 
 class Connection(object):
     def __init__(self, name):
         self.name = name
-        self.state = initial_disconnected # do not set this field directly, use MainWindow.setConnState()
+        self.state = disconnected # do not set this field directly, use MainWindow.setConnState()
         self.sock = None # ManagementInterfaceHandler
         self.port = 0
         self.logbuf = []
         self.logdlg = None # LogDlg
     def stateString(self):
-        if self.state == initial_disconnected or self.state == disconnected:
+        if self.state == disconnected:
             return 'Disconnected'
         elif self.state == failed:
             return 'Error'
         elif self.state == connecting:
             return 'Connecting'
+        elif self.state == disconnecting:
+            return 'Disconnecting'
         elif self.state == connected:
             return 'Connected'
         else:
@@ -102,7 +104,7 @@ class MainWindow(wx.Frame):
         # init tray icon
         
         self.notconnectedIcon = wx.Icon('images/fail16.ico', wx.BITMAP_TYPE_ICO)
-        self.connectingIcon = wx.Icon('images/waiting16.ico', wx.BITMAP_TYPE_ICO)
+        self.waitingIcon = wx.Icon('images/waiting16.ico', wx.BITMAP_TYPE_ICO)
         self.connectedIcon = wx.Icon('images/ack16.ico', wx.BITMAP_TYPE_ICO)
         
         self.trayicon = wx.TaskBarIcon()
@@ -141,9 +143,9 @@ class MainWindow(wx.Frame):
         # init list view
 
         self.imgs = wx.ImageList(24, 24, mask=True)
-        self.disconnectedImgId = self.imgs.Add(wx.Bitmap('images/notconnected24.png'))
+        self.disconnectedImgId = self.imgs.Add(wx.Bitmap('images/disconnected24.png'))
         self.connectedImgId = self.imgs.Add(wx.Bitmap('images/connected24.png'))
-        self.connectingImgId = self.imgs.Add(wx.Bitmap('images/connecting24.png'))
+        self.waitingImgId = self.imgs.Add(wx.Bitmap('images/waiting24.png'))
 
         self.list = wx.ListCtrl(self, -1, style=(wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES))
         self.list.SetImageList(self.imgs, wx.IMAGE_LIST_SMALL)
@@ -197,8 +199,8 @@ class MainWindow(wx.Frame):
             self.list.SetStringItem(i, 2, self.connections[i].stateString())
     
     def trayIconByState(self, state):
-        if state == connecting:
-            return self.connectingIcon
+        if state == connecting or state == disconnecting:
+            return self.waitingIcon
         elif state == connected:
             return self.connectedIcon
         else:
@@ -213,16 +215,18 @@ class MainWindow(wx.Frame):
             
     def setConnState(self, index, state):
         self.connections[index].state = state
+        if state == disconnected:
+            self.connections[index].port = 0
         if state == connected:
             self.trayicon.SetIcon(self.trayIconByState(state), self.traymsg)
         else:
             self.updateTrayIcon()
             
     def imgIndexByState(self, state):
-        if state == initial_disconnected or state == disconnected or state == failed:
+        if state == disconnected or state == failed:
             return self.disconnectedImgId
-        elif state == connecting:
-            return self.connectingImgId
+        elif state == connecting or state == disconnecting:
+            return self.waitingImgId
         elif state == connected:
             return self.connectedImgId
         else: # ?
@@ -237,7 +241,6 @@ class MainWindow(wx.Frame):
         else: # have selected item
             self.toolbar.EnableTool(id_EDITCFG, True)            
             if self.connections[index].state == disconnected \
-            or self.connections[index].state == initial_disconnected \
             or self.connections[index].state == failed:
                 self.toolbar.EnableTool(id_CONNECT, True)
                 self.toolbar.EnableTool(id_DISCONNECT, False)
@@ -322,6 +325,7 @@ class MainWindow(wx.Frame):
         index = self.list.GetFocusedItem()
         if index == -1:
             return
+        self.setConnState(index, disconnecting)
         self.connections[index].sock.send('signal SIGTERM\n')
 
     # from ManagementInterfaceHandler
@@ -374,7 +378,7 @@ class MainWindow(wx.Frame):
         index = self.list.GetFocusedItem();
         if self.connections[index].logdlg != None: # ?
             return
-        logdlg = LogDlg(self, self.connections[index].port)
+        logdlg = LogDlg(self, self.connections[index].port, self.connections[index].name)
         self.connections[index].logdlg = logdlg 
         logdlg.Bind(wx.EVT_CLOSE, self.OnLogDlgClose, logdlg)
         for l in self.connections[index].logbuf:
