@@ -6,7 +6,7 @@ from glob import glob
 import py2exe
 
 data_files=[('Microsoft.VC90.CRT', ['msvcp90.dll', 'Microsoft.VC90.CRT.manifest']),
-            ('images', glob('images\\*'))]
+            ('images', glob('images\\*.*'))]
 
 setup(
         windows=[{'script':'pyopenvpnman.py',

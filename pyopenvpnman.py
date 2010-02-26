@@ -101,9 +101,9 @@ class MainWindow(wx.Frame):
         
         # init tray icon
         
-        self.notconnectedIcon = wx.Icon('images/fail32.ico', wx.BITMAP_TYPE_ICO)
-        self.connectingIcon = wx.Icon('images/waiting32.ico', wx.BITMAP_TYPE_ICO)
-        self.connectedIcon = wx.Icon('images/ack32.ico', wx.BITMAP_TYPE_ICO)
+        self.notconnectedIcon = wx.Icon('images/fail16.ico', wx.BITMAP_TYPE_ICO)
+        self.connectingIcon = wx.Icon('images/waiting16.ico', wx.BITMAP_TYPE_ICO)
+        self.connectedIcon = wx.Icon('images/ack16.ico', wx.BITMAP_TYPE_ICO)
         
         self.trayicon = wx.TaskBarIcon()
         self.trayicon.SetIcon(self.notconnectedIcon, self.traymsg)
@@ -117,12 +117,12 @@ class MainWindow(wx.Frame):
         
         self.toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.TB_FLAT | wx.TB_TEXT | wx.TB_NO_TOOLTIPS )
 
-        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', wx.Bitmap('images/connect32.ico'))
-        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', wx.Bitmap('images/disconnect32.ico'))
-        editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/edit32.ico'))
-        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', wx.Bitmap('images/log32.ico'))
-        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.ico'))
-        aboutBtn = self.toolbar.AddLabelTool(id_REFRESH, 'About', wx.Bitmap('images/about.png'))
+        connect = self.toolbar.AddLabelTool(id_CONNECT, 'Connect', bitmap=wx.Bitmap('images/connect32.png'), bmpDisabled=wx.Bitmap('images/connect32gray.png'))
+        disconnect = self.toolbar.AddLabelTool(id_DISCONNECT, 'Disconnect', bitmap=wx.Bitmap('images/disconnect32.png'), bmpDisabled=wx.Bitmap('images/disconnect32gray.png'))
+        editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/editcfg32.png'))
+        viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', bitmap=wx.Bitmap('images/viewlog32.png'), bmpDisabled=wx.Bitmap('images/viewlog32gray.png'))
+        refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.png'))
+        aboutBtn = self.toolbar.AddLabelTool(id_ABOUT, 'About', wx.Bitmap('images/about32.png'))
         
         self.Bind(wx.EVT_TOOL, self.OnConnect, connect, id_CONNECT)
         self.Bind(wx.EVT_TOOL, self.OnDisconnect, disconnect, id_DISCONNECT)
