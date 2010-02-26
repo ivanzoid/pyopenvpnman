@@ -3,7 +3,7 @@ import wx
 class LogDlg(wx.Dialog):
     def __init__(self, parent, port, name):
         wx.Dialog.__init__(self, parent, -1, 'Log for ' + name, size=(400,300), style=(wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER))
-        
+
         self.port = port
 
         self.log = wx.TextCtrl(self, -1, '', style=(wx.TE_RICH | wx.TE_MULTILINE
@@ -44,7 +44,7 @@ class LogDlg(wx.Dialog):
         self.SetSizer(h)
         self.log.SetFocus()
         self.log.ShowPosition(self.log.GetLastPosition())
-    
+
     def AppendText(self, text):
         self.log.AppendText(text)
 

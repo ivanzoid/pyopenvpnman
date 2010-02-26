@@ -34,5 +34,5 @@ class AuthDlg(wx.Dialog):
 
         self.SetSizer(h)
         h.Fit(self)
-        
+
         self.username.SetFocus()
