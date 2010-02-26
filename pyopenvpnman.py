@@ -298,13 +298,16 @@ class MainWindow(wx.Frame):
         if index == -1:
             return
         port = self.getNextAvailablePort()
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         subprocess.Popen([self.ovpnexe,
                           '--config', self.ovpnconfigpath + '\\' + self.connections[index].name + '.ovpn',
                           '--management', '127.0.0.1', '{0}'.format(port),
                           '--management-query-passwords',
                           '--management-log-cache', '200',
                           '--management-hold'],
-                          cwd=self.ovpnconfigpath)
+                          cwd=self.ovpnconfigpath,
+                          startupinfo=startupinfo)
         self.connections[index].sock = ManagementInterfaceHandler(self, '127.0.0.1', port)
         self.connections[index].port = port
         self.setConnState(index, connecting)
