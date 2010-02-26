@@ -87,6 +87,12 @@ class Connection(object):
             return 'Connected'
         else:
             return 'Error'
+        
+def getBasePath():
+    if hasattr(sys, "frozen") and sys.frozen == "windows_exe":
+        return os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        return os.path.dirname(os.path.abspath(__file__))
 
 class MainWindow(wx.Frame):
 
@@ -102,7 +108,7 @@ class MainWindow(wx.Frame):
                 self.ovpnpath = sys.argv[2]
 
 
-        self.path = os.path.dirname(os.path.abspath(__file__)) + '/'                
+        self.path = getBasePath() + '/'                 
         self.ovpnconfigpath = self.ovpnpath + '\\config'
         self.ovpnexe = self.ovpnpath + '\\bin\\openvpn.exe'
         self.traymsg = 'OpenVPN Connection Manager'
