@@ -95,6 +95,9 @@ class MainWindow(wx.Frame):
         self.traymsg = 'OpenVPN Connection Manager'
         self.connections = {}
         
+        # set app icon
+        self.SetIcon(wx.Icon('images/app.ico', wx.BITMAP_TYPE_ICO))
+        
         # init tray icon
         
         self.notconnectedIcon = wx.Icon('images/fail32.ico', wx.BITMAP_TYPE_ICO)
