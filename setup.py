@@ -10,7 +10,7 @@ data_files=[('Microsoft.VC90.CRT', ['msvcp90.dll', 'Microsoft.VC90.CRT.manifest'
 
 setup(
         windows=[{'script':'pyopenvpnman.py',
-                  'icon_resources': [(0, 'images\\app32.ico')]}],
+                  'icon_resources': [(1, 'images\\app32.ico')]}],
         data_files=data_files,
         options={'py2exe':{
                     'optimize': 1,

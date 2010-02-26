@@ -12,6 +12,7 @@ id_DISCONNECT = wx.NewId()
 id_EDITCFG = wx.NewId()
 id_VIEWLOG = wx.NewId()
 id_REFRESH = wx.NewId()
+id_ABOUT = wx.NewId()
 
 def escapePassword(password):
     result = password.replace('\\', '\\\\').replace('"', '\\"').replace(' ', '\\ ')
@@ -121,12 +122,14 @@ class MainWindow(wx.Frame):
         editcfg = self.toolbar.AddLabelTool(id_EDITCFG, 'Edit config', wx.Bitmap('images/edit32.ico'))
         viewlog = self.toolbar.AddLabelTool(id_VIEWLOG, 'View log', wx.Bitmap('images/log32.ico'))
         refresh = self.toolbar.AddLabelTool(id_REFRESH, 'Refresh', wx.Bitmap('images/refresh32.ico'))
+        aboutBtn = self.toolbar.AddLabelTool(id_REFRESH, 'About', wx.Bitmap('images/about.png'))
         
         self.Bind(wx.EVT_TOOL, self.OnConnect, connect, id_CONNECT)
         self.Bind(wx.EVT_TOOL, self.OnDisconnect, disconnect, id_DISCONNECT)
         self.Bind(wx.EVT_TOOL, self.OnEditCfg, editcfg, id_EDITCFG)
         self.Bind(wx.EVT_TOOL, self.OnViewLog, viewlog, id_VIEWLOG)
         self.Bind(wx.EVT_TOOL, self.OnRefresh, refresh, id_REFRESH)
+        self.Bind(wx.EVT_TOOL, self.OnCmdAbout, aboutBtn, id_ABOUT)
         
         self.toolbar.Realize()
         
@@ -391,6 +394,17 @@ class MainWindow(wx.Frame):
     def OnRefresh(self, event):
         self.updateList()
         #print 'refresh'
+        
+    def OnCmdAbout(self, event):
+        aboutinfo = wx.AboutDialogInfo()
+        aboutinfo.SetName('OpenVPN Connection Manager')
+        aboutinfo.SetVersion('1.0')
+        #aboutinfo.SetDescription('Description')
+        #aboutinfo.SetCopyright('(C) 2010')
+        
+        # see info about other possible fields here: http://docs.wxwidgets.org/stable/wx_wxaboutdialoginfo.html#wxaboutdialoginfo
+    
+        wx.AboutBox(aboutinfo)
         
     def OnItemSelected(self, event):
         self.updateToolbar(event.m_itemIndex)
